@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<!-- PWA / Add to Home Screen (iOS) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ALM Ch.6">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%231a2540'/%3E%3Crect x='0' y='140' width='180' height='8' fill='%232e7d32'/%3E%3Ctext x='90' y='85' font-family='Helvetica' font-weight='bold' font-size='42' fill='white' text-anchor='middle'%3E6%3C/text%3E%3Ctext x='90' y='125' font-family='Helvetica' font-size='16' fill='%23a5d6a7' text-anchor='middle'%3EALM%3C/text%3E%3C/svg%3E">
+
+<title>ALM · Ch.6 Climate Risk</title>
+
+<!-- KaTeX -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});initApp();"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2540;--green:#2e7d32;--green-lt:#43a047;--green-bg:#e8f5e9;--green-bdr:#a5d6a7;
+  --blue:#1565c0;--blue-bg:#e3f2fd;--blue-bdr:#90caf9;
+  --amber:#e65100;--amber-bg:#fff3e0;--amber-bdr:#ffcc80;
+  --red:#b71c1c;--red-bg:#ffebee;
+  --g1:#f5f5f5;--g2:#eeeeee;--g3:#9e9e9e;--g4:#616161;
+  --text:#212121;--text2:#424242;
+  --r:8px;--sh:0 2px 12px rgba(0,0,0,.10);
+  --bar-h:54px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.65;color:var(--text);background:#f4f7f4;padding-bottom:5rem;-webkit-tap-highlight-color:transparent}
+
+/* ── TOP BAR ─────────────────────────────────────────────── */
+.top-bar{background:var(--navy);color:#fff;padding:0 env(safe-area-inset-right,12px) 0 env(safe-area-inset-left,12px);height:var(--bar-h);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.tb-left{display:flex;align-items:center;gap:10px}
+.ch-badge{background:var(--green);color:#fff;font-size:10px;font-weight:800;letter-spacing:.5px;padding:2px 9px;border-radius:20px}
+.top-bar h1{font-size:15px;font-weight:700}
+.tb-right{display:flex;align-items:center;gap:8px}
+#timer-disp{font-family:'Courier New',monospace;font-size:17px;font-weight:700;color:#a5d6a7;min-width:62px;text-align:center;transition:color .3s}
+.tb-btn{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:12px;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.tb-btn:hover,.tb-btn:active{background:rgba(255,255,255,.15)}
+.tb-btn.warn{border-color:#ef9a9a;color:#ef9a9a}
+
+/* ── PROGRESS ────────────────────────────────────────────── */
+.prog-outer{height:3px;background:rgba(255,255,255,.12);position:sticky;top:var(--bar-h);z-index:199}
+#read-prog{height:3px;background:var(--green-lt);width:0%;transition:width .1s}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.wrap{max-width:880px;margin:0 auto;padding:1.25rem 1rem 0}
+
+/* ── NAV ─────────────────────────────────────────────────── */
+.nav-tabs{display:flex;gap:3px;background:#fff;border-radius:var(--r);padding:5px;box-shadow:var(--sh);margin-bottom:1.5rem;flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav-tab{flex:1;min-width:78px;padding:7px 3px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:11.5px;font-weight:600;color:var(--g4);text-align:center;transition:all .15s;white-space:nowrap}
+.nav-tab:hover{background:var(--g1);color:var(--text)}
+.nav-tab.active{background:var(--green);color:#fff}
+.section{display:none}.section.active{display:block}
+
+/* ── TYPOGRAPHY ──────────────────────────────────────────── */
+h2{font-size:21px;color:var(--navy);margin-bottom:.7rem;padding-bottom:.45rem;border-bottom:2.5px solid var(--green)}
+h3{font-size:15px;color:var(--green);margin:1.2rem 0 .5rem;font-weight:700}
+h4{font-size:13.5px;color:var(--navy);margin:.9rem 0 .35rem;font-weight:700}
+p{margin-bottom:.7rem;color:var(--text2)}
+
+/* ── CARDS & CALLOUTS ────────────────────────────────────── */
+.card{background:#fff;border-radius:var(--r);padding:1.1rem 1.3rem;margin-bottom:1.1rem;box-shadow:var(--sh);border-left:4px solid var(--green)}
+.card.blue{border-left-color:var(--blue)}.card.amber{border-left-color:var(--amber)}.card.navy{border-left-color:var(--navy);background:#f8faff}
+.callout{border-radius:var(--r);padding:.9rem 1.1rem;margin:.9rem 0;border:1px solid}
+.callout.tip{background:var(--green-bg);border-color:var(--green-bdr)}
+.callout.warn{background:var(--amber-bg);border-color:var(--amber-bdr)}
+.callout.form{background:var(--blue-bg);border-color:var(--blue-bdr)}
+.callout.dng{background:var(--red-bg);border-color:#ef9a9a}
+.ct{font-weight:800;font-size:11px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:.4rem}
+.callout.tip .ct{color:var(--green)}.callout.warn .ct{color:var(--amber)}.callout.form .ct{color:var(--blue)}.callout.dng .ct{color:var(--red)}
+
+/* ── MATH ────────────────────────────────────────────────── */
+.math-blk{background:var(--blue-bg);border:1px solid var(--blue-bdr);border-radius:var(--r);padding:.9rem 1.1rem;margin:.9rem 0;overflow-x:auto}
+.eq-lbl{font-size:11px;color:var(--g3);font-style:italic;margin-top:.2rem}
+
+/* ── TABLES ──────────────────────────────────────────────── */
+.dt{width:100%;border-collapse:collapse;margin:.9rem 0;font-size:13px}
+.dt th{background:var(--navy);color:#fff;padding:7px 10px;text-align:left;font-weight:700;font-size:11.5px}
+.dt td{padding:7px 10px;border-bottom:1px solid var(--g2);vertical-align:top}
+.dt tr:nth-child(even) td{background:var(--g1)}
+.dt tr:hover td{background:var(--green-bg)}
+
+/* ── DRAWING AREA ────────────────────────────────────────── */
+.draw-wrap{margin:1rem 0;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);border:1px solid var(--g2)}
+.draw-header{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--navy);gap:6px;flex-wrap:wrap}
+.draw-label{font-size:11px;font-weight:700;color:#a5d6a7;letter-spacing:.3px;flex:1}
+.draw-tools{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.dt-btn{width:30px;height:30px;border:1.5px solid rgba(255,255,255,.2);border-radius:6px;background:transparent;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s;color:#fff;-webkit-tap-highlight-color:transparent}
+.dt-btn:hover,.dt-btn:active{background:rgba(255,255,255,.2)}
+.dt-btn.active-tool{background:rgba(255,255,255,.25);border-color:var(--green-lt)}
+.color-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;transition:transform .15s;flex-shrink:0}
+.color-dot:hover,.color-dot.active-color{transform:scale(1.3);border-color:#fff}
+.canvas-container{position:relative;background:#fff;width:100%}
+canvas.draw-canvas{display:block;width:100%;cursor:crosshair;touch-action:none;background:#fff}
+.canvas-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.35;transition:opacity .4s}
+.canvas-hint span{font-size:13px;color:var(--g3);font-style:italic}
+.draw-footer{display:flex;align-items:center;justify-content:space-between;padding:4px 10px;background:var(--g1);border-top:1px solid var(--g2)}
+.draw-status{font-size:10.5px;color:var(--g3)}.save-indicator{font-size:10px;color:var(--green);opacity:0;transition:opacity .5s}
+.save-indicator.show{opacity:1}
+
+/* ── COLLAPSIBLE QUESTIONS ───────────────────────────────── */
+.q-block{background:#fff;border:1px solid var(--g2);border-radius:var(--r);margin-bottom:.9rem;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.q-head{padding:.9rem 1.1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.q-head:hover,.q-head:active{background:var(--green-bg)}
+.q-text{font-weight:600;color:var(--text);flex:1;font-size:14px}
+.q-meta{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.pts{background:var(--navy);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.toggle{font-size:16px;color:var(--green);transition:transform .25s;line-height:1}
+.q-block.open .toggle{transform:rotate(180deg)}
+.a-panel{display:none;padding:.9rem 1.1rem;border-top:1px solid var(--green-bg);background:#fcfffc}
+.q-block.open .a-panel{display:block}
+.a-lbl{font-size:10.5px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.6rem}
+
+/* ── SCORE TRACKER ───────────────────────────────────────── */
+.score-bar{background:var(--navy);color:#fff;border-radius:var(--r);padding:.9rem 1.3rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.3rem;flex-wrap:wrap;gap:.5rem}
+.score-val{font-family:'Courier New',monospace;font-size:22px;font-weight:700}
+.score-lbl{font-size:11px;opacity:.65}
+
+/* ── FLASHCARDS ──────────────────────────────────────────── */
+.fc-scene{perspective:1000px;margin-bottom:.75rem}
+.fc-card{width:100%;min-height:150px;cursor:pointer;transition:transform .55s;transform-style:preserve-3d;position:relative;border-radius:var(--r)}
+.fc-card.flip{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;border-radius:var(--r);padding:1.1rem;display:flex;flex-direction:column;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:var(--sh)}
+.fc-front{background:var(--navy);color:#fff}
+.fc-back{background:var(--green-bg);border:1px solid var(--green-bdr);transform:rotateY(180deg)}
+.fc-tag{font-size:9.5px;font-weight:700;letter-spacing:1px;color:#a5d6a7;margin-bottom:.4rem;text-transform:uppercase}
+.fc-q{font-size:14.5px;font-weight:600}
+.fc-hint{font-size:11px;opacity:.55;margin-top:.4rem}
+.fc-ans{font-size:13.5px;color:var(--text)}
+.fc-nav{display:flex;gap:.5rem;justify-content:center;margin-top:.5rem;flex-wrap:wrap}
+.fc-btn{padding:6px 16px;border:none;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:600;transition:opacity .15s;-webkit-tap-highlight-color:transparent}
+.fc-btn:hover{opacity:.82}
+.fc-btn.again{background:var(--red-bg);color:var(--red)}.fc-btn.hard{background:var(--amber-bg);color:var(--amber)}
+.fc-btn.good{background:var(--green-bg);color:var(--green)}.fc-btn.easy{background:var(--blue-bg);color:var(--blue)}
+.fc-prog{text-align:center;font-size:11.5px;color:var(--g3);margin-bottom:.6rem}
+
+/* ── FORMULA SHEET ───────────────────────────────────────── */
+.f-item{display:flex;gap:.8rem;padding:.55rem 0;border-bottom:1px solid var(--g2);align-items:baseline;flex-wrap:wrap}
+.f-name{font-size:11.5px;font-weight:700;color:var(--navy);min-width:155px;flex-shrink:0}
+.f-eq{color:var(--blue);flex:1;font-size:13.5px}
+
+/* ── DERIVATION STEPS ────────────────────────────────────── */
+.d-step{display:flex;gap:.8rem;padding:.65rem 0;border-bottom:1px solid var(--g2);align-items:flex-start}
+.d-step:last-child{border:none}
+.d-num{background:var(--green);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex-shrink:0;margin-top:2px}
+.d-body{flex:1}.d-title{font-weight:700;font-size:13px;color:var(--navy);margin-bottom:.25rem}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+#toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:8px 18px;border-radius:20px;font-size:12.5px;opacity:0;transition:all .3s;z-index:999;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── STORAGE INFO ────────────────────────────────────────── */
+.storage-bar{display:flex;align-items:center;gap:8px;padding:.6rem 1rem;background:var(--g1);border-radius:var(--r);margin-bottom:1rem;font-size:12px;color:var(--g4)}
+.storage-bar button{margin-left:auto;padding:3px 10px;border:1px solid var(--g3);border-radius:5px;background:transparent;cursor:pointer;font-size:11.5px;color:var(--g4)}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media(max-width:600px){
+  h2{font-size:18px}.nav-tab{font-size:10.5px;padding:6px 2px}
+  .top-bar h1{font-size:13px}#timer-disp{font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="tb-left">
+    <span class="ch-badge">CH 6</span>
+    <h1>Climate Risk &amp; ESG</h1>
+  </div>
+  <div class="tb-right">
+    <div id="timer-disp">18:00</div>
+    <button class="tb-btn" id="btn-start">▶</button>
+    <button class="tb-btn warn" id="btn-reset">↺</button>
+  </div>
+</div>
+<div class="prog-outer"><div id="read-prog"></div></div>
+
+<div class="wrap">
+
+<!-- NAV -->
+<nav class="nav-tabs" id="nav">
+  <button class="nav-tab active" data-s="overview">📍 Overview</button>
+  <button class="nav-tab" data-s="dice">📊 DICE</button>
+  <button class="nav-tab" data-s="hjb">∫ HJB</button>
+  <button class="nav-tab" data-s="scc">💰 SCC</button>
+  <button class="nav-tab" data-s="exam">📋 Exam</button>
+  <button class="nav-tab" data-s="cards">🃏 Cards</button>
+  <button class="nav-tab" data-s="formulas">📐 Formulas</button>
+</nav>
+
+<!-- ══════════ OVERVIEW ══════════ -->
+<section class="section active" id="sec-overview">
+  <div class="callout tip"><div class="ct">⚡ Exam Snapshot</div>
+    <p style="margin:0">≈<strong>10 pts (13%)</strong>. Part A: physical vs transition risk, carbon pricing. Part B: write the HJB jump term; verify the value function conjecture; derive $\text{SCC}=-J_S/J_C$.</p>
+  </div>
+  <h2>Module Map</h2>
+  <div style="font-family:'Courier New',monospace;font-size:12.5px;background:var(--navy);color:#a5d6a7;border-radius:var(--r);padding:1rem 1.2rem;line-height:1.9;overflow-x:auto;margin:.9rem 0">
+Climate Risk
+├── Physical ──── K → K(1−ε)  [Poisson jump, rate λ]
+│   ├── Acute: hurricanes, floods, wildfires
+│   └── Chronic: sea-level rise, drought
+└── Transition ── policy shock to production
+    ├── ETS / Carbon tax τ
+    ├── Abatement μ
+    └── Stranded assets
+
+DICE: K(t), S(t), T(t)  ←→  Damage D(T) → output Y
+Climate HJB  →  FOC  →  SCC = −J_S / J_C
+               ↑
+     λ∫[J(K(1−ε))−J(K)] f(ε) dε</div>
+
+  <h2>Physical vs. Transition Risk</h2>
+  <table class="dt"><thead><tr><th>Dimension</th><th>Physical Risk</th><th>Transition Risk</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Source</strong></td><td>Direct climate events</td><td>Policy response</td></tr>
+    <tr><td><strong>Examples</strong></td><td>Hurricanes, drought, floods</td><td>Carbon tax, stranded assets, ETS</td></tr>
+    <tr><td><strong>Model channel</strong></td><td>$K \to K(1-\varepsilon)$ jump</td><td>Tax $\tau$ modifies net output</td></tr>
+    <tr><td><strong>HJB entry</strong></td><td>Jump operator $\mathcal{L}_\text{jump}J$</td><td>Modified drift in $\dot{K}$</td></tr>
+    <tr><td><strong>Hedge</strong></td><td>CAT bonds, diversification</td><td>Green bonds, carbon futures</td></tr>
+  </tbody></table>
+
+  <div class="callout warn"><div class="ct">⚠ Exam Pitfall</div>
+    <p style="margin:0">Physical risk creates a <em>jump discontinuity</em> in $K$. Transition risk modifies the <em>drift</em>. They enter the HJB through completely different channels.</p>
+  </div>
+
+  <!-- Notes canvas -->
+  <h3>Your Notes</h3>
+  <div id="dw-overview-notes"></div>
+</section>
+
+<!-- ══════════ DICE ══════════ -->
+<section class="section" id="sec-dice">
+  <h2>The DICE Integrated Assessment Model</h2>
+  <p>DICE couples a Ramsey growth economy with a carbon-cycle and temperature module — the standard IAM for computing the SCC.</p>
+
+  <h3>State Variables</h3>
+  <table class="dt"><thead><tr><th>Symbol</th><th>Name</th><th>Equation of Motion</th></tr></thead>
+  <tbody>
+    <tr><td>$K(t)$</td><td>Capital stock</td><td>$\dot{K}=Y-C-\mu Y-\delta_K K$</td></tr>
+    <tr><td>$S(t)$</td><td>Carbon stock</td><td>$\dot{S}=E(K,\mu)-\delta_S S$</td></tr>
+    <tr><td>$T(t)$</td><td>Temperature anomaly</td><td>$\dot{T}=\beta[\ln(S/S_\text{pre})-T]$</td></tr>
+  </tbody></table>
+
+  <h3>Sketch the DICE feedback loop</h3>
+  <div id="dw-dice-feedback"></div>
+
+  <h3>Production &amp; Damage</h3>
+  <div class="math-blk">$$Y(t)=A(t)K(t)^\alpha\bigl(1-D(T(t))\bigr)$$<div class="eq-lbl">Net output: technology × capital × damage factor</div></div>
+  <div class="math-blk">$$D(T)=a_1T+a_2T^2$$<div class="eq-lbl">Nordhaus quadratic: $D(2.5°C)\approx1.9\%$ of GDP</div></div>
+
+  <h3>Optimal Abatement — FOC</h3>
+  <div class="callout form"><div class="ct">📐 First-Order Condition for $\mu^*$</div>
+    $$\underbrace{\theta_1\theta_2\mu^{\theta_2-1}Y}_{\text{MAC}(\mu)}=\text{SCC}\cdot\left|\frac{\partial E}{\partial\mu}\right|$$
+    <p style="margin-top:.5rem;margin-bottom:0">Planner abates until marginal abatement cost = SCC × marginal emission reduction.</p>
+  </div>
+
+  <h3>Derive the optimal abatement FOC</h3>
+  <div id="dw-dice-foc"></div>
+</section>
+
+<!-- ══════════ HJB ══════════ -->
+<section class="section" id="sec-hjb">
+  <h2>Climate HJB with Poisson Disaster Jumps</h2>
+
+  <div class="callout dng"><div class="ct">🎯 Exam Target</div>
+    <p style="margin:0">The jump term is <strong>almost always explicitly tested</strong>. Write it from memory, explain every component, then use it to evaluate a conjectured value function.</p>
+  </div>
+
+  <h3>The Full HJB Equation</h3>
+  <div class="math-blk">
+    $$\rho J=\max_C\!\left\{\frac{C^{1-\gamma}}{1-\gamma}+J_K[Y-C-\delta_K K]+J_S[E-\delta_S S]+J_T\beta[\ln(S/S_\text{pre})-T]+\underbrace{\lambda\!\int_0^1\![J(K(1-\varepsilon),S,T)-J(K,S,T)]f(\varepsilon)\,d\varepsilon}_{\mathcal{L}_\text{jump}J}\right\}$$
+    <div class="eq-lbl">Full climate HJB: value (LHS) = utility + drift terms + jump compensation (RHS)</div>
+  </div>
+
+  <h3>Jump term anatomy</h3>
+  <table class="dt"><thead><tr><th>Component</th><th>Meaning</th><th>Sign</th></tr></thead>
+  <tbody>
+    <tr><td>$\lambda$</td><td>Poisson arrival rate of disasters</td><td>$>0$</td></tr>
+    <tr><td>$f(\varepsilon)$</td><td>Density of disaster severity $\varepsilon\in[0,1]$</td><td>Prob. weight</td></tr>
+    <tr><td>$J(K(1-\varepsilon),\ldots)-J(K,\ldots)$</td><td>Value loss per disaster of severity $\varepsilon$</td><td>$<0$</td></tr>
+    <tr><td>$\mathcal{L}_\text{jump}J$</td><td>Expected instantaneous value change from disaster risk</td><td>$<0$</td></tr>
+  </tbody></table>
+
+  <h3>Label each term of the HJB</h3>
+  <div id="dw-hjb-label"></div>
+
+  <h3>Verify the Value Function Conjecture</h3>
+  <div class="card navy">
+    <div class="d-step"><div class="d-num">1</div><div class="d-body"><div class="d-title">Conjecture &amp; partials</div>
+      <p style="margin-bottom:.3rem">$J(C,S)=\dfrac{C^{1-\gamma}}{1-\gamma}\cdot S^{-\gamma\varphi}$</p>
+      <p style="margin:0">$J_C=C^{-\gamma}S^{-\gamma\varphi},\quad J_S=\dfrac{C^{1-\gamma}}{1-\gamma}(-\gamma\varphi)S^{-\gamma\varphi-1}$</p>
+    </div></div>
+    <div class="d-step"><div class="d-num">2</div><div class="d-body"><div class="d-title">Evaluate the jump integral</div>
+      <p style="margin:0">$J(K(1-\varepsilon),\ldots)=(1-\varepsilon)^{1-\gamma}J\;\Rightarrow\;\mathcal{L}_\text{jump}J=\lambda J\underbrace{\int[(1-\varepsilon)^{1-\gamma}-1]f(\varepsilon)d\varepsilon}_{\Phi(\gamma)<0}$</p>
+    </div></div>
+    <div class="d-step"><div class="d-num">3</div><div class="d-body"><div class="d-title">Substitute &amp; collect</div>
+      <p style="margin:0">Factor out $J$. Get one algebraic equation pinning down $\varphi$.</p>
+    </div></div>
+    <div class="d-step"><div class="d-num">4</div><div class="d-body"><div class="d-title">SCC</div>
+      <p style="margin:0">$\text{SCC}=-J_S/J_C=\dfrac{\gamma\varphi}{1-\gamma}\cdot\dfrac{C}{S}$</p>
+    </div></div>
+  </div>
+
+  <h3>Full conjecture verification — your workspace</h3>
+  <div id="dw-hjb-conjecture"></div>
+</section>
+
+<!-- ══════════ SCC ══════════ -->
+<section class="section" id="sec-scc">
+  <h2>Social Cost of Carbon</h2>
+
+  <div class="callout form"><div class="ct">📐 Definition</div>
+    $$\text{SCC}(t)\;\equiv\;-\frac{J_S}{J_C}=\frac{\gamma\varphi}{1-\gamma}\cdot\frac{C}{S}$$
+    <p style="margin-top:.5rem;margin-bottom:0">Consumption the social planner sacrifices to reduce carbon stock by one unit.</p>
+  </div>
+
+  <table class="dt"><thead><tr><th>Change</th><th>Effect on SCC</th><th>Intuition</th></tr></thead>
+  <tbody>
+    <tr><td>$\uparrow C$</td><td>SCC rises</td><td>Richer economy → higher WTP</td></tr>
+    <tr><td>$\uparrow S$</td><td>SCC falls</td><td>Diminishing marginal damage</td></tr>
+    <tr><td>$\uparrow\gamma$</td><td>SCC rises</td><td>More aversion to catastrophic loss</td></tr>
+    <tr><td>$\uparrow\lambda$</td><td>SCC rises (via $\varphi$)</td><td>Greater disaster risk raises shadow price</td></tr>
+    <tr><td>$\lambda\to\infty$</td><td>SCC$\to\infty$</td><td>Certain catastrophe → any abatement worth it</td></tr>
+  </tbody></table>
+
+  <h3>Derive SCC from the conjecture — your workspace</h3>
+  <div id="dw-scc-derive"></div>
+
+  <h3>ETS vs. Carbon Tax</h3>
+  <table class="dt"><thead><tr><th>Dimension</th><th>ETS</th><th>Carbon Tax</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Price certainty</strong></td><td>✗ Volatile</td><td>✓ Fixed</td></tr>
+    <tr><td><strong>Quantity certainty</strong></td><td>✓ Capped</td><td>✗ Uncertain</td></tr>
+    <tr><td><strong>MAC steep</strong></td><td>Cost risk → Tax preferred</td><td>✓ Preferred</td></tr>
+    <tr><td><strong>MD steep</strong></td><td>✓ Preferred</td><td>Damage risk → ETS preferred</td></tr>
+  </tbody></table>
+
+  <div class="callout tip"><div class="ct">💡 Weitzman's Rule</div>
+    $$\text{Prefer Tax if }\left|\frac{\partial\,\text{MAC}}{\partial q}\right|>\left|\frac{\partial\,\text{MD}}{\partial q}\right|$$
+  </div>
+
+  <h3>ETS vs Tax analysis — your notes</h3>
+  <div id="dw-scc-ets"></div>
+</section>
+
+<!-- ══════════ EXAM ══════════ -->
+<section class="section" id="sec-exam">
+  <h2>Exam Drill</h2>
+  <div class="score-bar">
+    <div><div class="score-lbl">SCORE</div><div class="score-val"><span id="sc-num">0</span> / 10</div></div>
+    <div><div class="score-lbl">DONE</div><div class="score-val"><span id="sc-done">0</span> / 8</div></div>
+    <button class="tb-btn" onclick="resetScore()">↺ Reset</button>
+  </div>
+
+  <p style="color:var(--g4);font-size:13px;margin-bottom:1.2rem">Attempt in the drawing area, then reveal the model answer.</p>
+
+  <h3>Part A — Conceptual (4 pts)</h3>
+
+  <div class="q-block" onclick="toggleQ(this)">
+    <div class="q-head">
+      <div class="q-text">A.1 — Define SCC in terms of $J$. What does $-J_S/J_C$ mean economically?</div>
+      <div class="q-meta"><span class="pts">1 pt</span><span class="toggle">▼</span></div>
+    </div>
+    <div class="a-panel">
+      <div id="dw-qa1"></div>
+      <div class="a-lbl">✓ Model Answer</div>
+      <p>$\text{SCC}\equiv-J_S/J_C$. The numerator $-J_S>0$ is the welfare cost of one unit of carbon stock. Dividing by $J_C>0$ converts to consumption units. The ratio is the consumption the planner is willing to forgo to reduce $S$ by one unit — the <em>consumption-equivalent price</em> of carbon.</p>
+    </div>
+  </div>
+
+  <div class="q-block" onclick="toggleQ(this)">
+    <div class="q-head">
+      <div class="q-text">A.2 — "Physical risk is insurable, so only transition risk matters." Evaluate using DICE.</div>
+      <div class="q-meta"><span class="pts">1 pt</span><span class="toggle">▼</span></div>
+    </div>
+    <div class="a-panel">
+      <div id="dw-qa2"></div>
+      <div class="a-lbl">✓ Model Answer</div>
+      <p><strong>Flawed.</strong> Individual events may be insurable, but systemic chronic risk (sea-level rise, persistent drought) enters DICE as $D(T)$ in the production function — an economy-wide loss that no private insurer can offset. Also, insuring physical risk does not remove the externality.</p>
+    </div>
+  </div>
+
+  <div class="q-block" onclick="toggleQ(this)">
+    <div class="q-head">
+      <div class="q-text">A.3 — Write the optimal abatement FOC and interpret MAC = SCC × marginal emission reduction.</div>
+      <div class="q-meta"><span class="pts">1 pt</span><span class="toggle">▼</span></div>
+    </div>
+    <div class="a-panel">
+      <div id="dw-qa3"></div>
+      <div class="a-lbl">✓ Model Answer</div>
+      <p>$$\theta_1\theta_2\mu^{\theta_2-1}Y=\text{SCC}\cdot|\partial E/\partial\mu|$$</p>
+      <p>LHS: cost of raising abatement by $d\mu$. RHS: value of the emission reduction in consumption units. At optimum, cost of abating = benefit of lower carbon, where benefit is valued at SCC.</p>
+    </div>
+  </div>
+
+  <div class="q-block" onclick="toggleQ(this)">
+    <div class="q-head">
+      <div class="q-text">A.4 — State Weitzman's rule. When does each carbon pricing mechanism dominate?</div>
+      <div class="q-meta"><span class="pts">1 pt</span><span class="toggle">▼</span></div>
+    </div>
+    <div class="a-panel">
+      <div id="dw-qa4"></div>
+      <div class="a-lbl">✓ Model Answer</div>
+      <p>Prefer a <strong>carbon tax</strong> when $|\partial\,\text{MAC}/\partial q|>|\partial\,\text{MD}/\partial q|$ (MAC curve steeper). Prefer <strong>ETS</strong> when MD curve is steeper. Intuition: price certainty (tax) avoids extreme abatement costs when MAC is steep; quantity certainty (ETS) avoids irreversible damage when MD is steep.</p>
+    </div>
+  </div>
+
+  <h3>Part B — Climate HJB (6 pts)</h3>
+
+  <div class="q-block" onclick="toggleQ(this)">
+    <div class="q-head">
+      <div class="q-text">B.1 — Write the full Climate HJB including the Poisson jump term. Define every symbol.</div>
+      <div class="q-meta"><span class="pts">2 pts</span><span class="toggle">▼</span></div>
+    </div>
+    <div class="a-panel">
+      <div id="dw-qb1"></div>
+      <div class="a-lbl">✓ Model Answer</div>
+      <p>$$\rho J=\max_C\!\left\{\frac{C^{1-\gamma}}{1-\gamma}+J_K[Y-C-\delta_K K]+J_S[E-\delta_S S]+J_T\beta[\ln(S/S_\text{pre})-T]+\lambda\!\int_0^1[J(K(1-\varepsilon),S,T)-J(K,S,T)]f(\varepsilon)d\varepsilon\right\}$$</p>
+      <p>$\rho$=discount rate; $\gamma$=CRRA; $\lambda$=Poisson rate; $\varepsilon$=capital destruction fraction; $f(\varepsilon)$=severity density; $\delta_K,\delta_S$=depreciation; $\beta$=temperature adjustment speed.</p>
+    </div>
+  </div>
+
+  <div class="q-block" onclick="toggleQ(this)">
+    <div class="q-head">
+      <div class="q-text">B.2 — Conjecture $J=\frac{C^{1-\gamma}}{1-\gamma}S^{-\gamma\varphi}$. Evaluate the jump integral and derive the closed-form SCC.</div>
+      <div class="q-meta"><span class="pts">2 pts</span><span class="toggle">▼</span></div>
+    </div>
+    <div class="a-panel">
+      <div id="dw-qb2"></div>
+      <div class="a-lbl">✓ Model Answer</div>
+      <p>$J_C=C^{-\gamma}S^{-\gamma\varphi}$, $J_S=\frac{C^{1-\gamma}}{1-\gamma}(-\gamma\varphi)S^{-\gamma\varphi-1}$. Under conjecture: $J(K(1-\varepsilon),\ldots)=(1-\varepsilon)^{1-\gamma}J$, so $\mathcal{L}_\text{jump}J=\lambda J\Phi(\gamma)$ where $\Phi(\gamma)=\int[(1-\varepsilon)^{1-\gamma}-1]f(\varepsilon)d\varepsilon&lt;0$.</p>
+      <p>$$\text{SCC}=-J_S/J_C=\frac{\gamma\varphi}{1-\gamma}\cdot\frac{C}{S}$$</p>
+    </div>
+  </div>
+
+  <div class="q-block" onclick="toggleQ(this)">
+    <div class="q-head">
+      <div class="q-text">B.3 — Interpret $\text{SCC}=\frac{\gamma\varphi}{1-\gamma}\cdot\frac{C}{S}$. How does it depend on $\gamma$, $C/S$, $\lambda$? What if $\lambda\to\infty$?</div>
+      <div class="q-meta"><span class="pts">2 pts</span><span class="toggle">▼</span></div>
+    </div>
+    <div class="a-panel">
+      <div id="dw-qb3"></div>
+      <div class="a-lbl">✓ Model Answer</div>
+      <ul style="margin-left:1.1rem;color:var(--text2);line-height:2">
+        <li><strong>↑γ:</strong> $\frac{\gamma}{1-\gamma}$ rises → SCC rises. Higher risk aversion penalises catastrophic outcomes more.</li>
+        <li><strong>↑C/S:</strong> SCC rises. Richer economy relative to carbon burden → higher WTP for emission reduction.</li>
+        <li><strong>↑λ (via φ):</strong> More disasters → $\varphi$ rises → SCC rises. Greater physical risk raises the shadow cost of carbon.</li>
+        <li><strong>λ→∞:</strong> $\varphi\to\infty$, SCC$\to\infty$. Certain catastrophe means any emission is infinitely costly.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FLASHCARDS ══════════ -->
+<section class="section" id="sec-cards">
+  <h2>Spaced Repetition Flashcards</h2>
+  <p>Tap to flip. Rate your recall to track what to revisit.</p>
+  <div class="fc-prog" id="fc-prog">Card 1 / 8</div>
+  <div id="fc-wrap"></div>
+  <div class="fc-nav">
+    <button class="fc-btn again" onclick="rateCard('again')">😰 Again</button>
+    <button class="fc-btn hard"  onclick="rateCard('hard')">😓 Hard</button>
+    <button class="fc-btn good"  onclick="rateCard('good')">😊 Good</button>
+    <button class="fc-btn easy"  onclick="rateCard('easy')">😎 Easy</button>
+  </div>
+</section>
+
+<!-- ══════════ FORMULAS ══════════ -->
+<section class="section" id="sec-formulas">
+  <h2>Formula Sheet</h2>
+  <div class="card">
+    <div class="f-item"><div class="f-name">DICE net output</div><div class="f-eq">$Y=AK^\alpha(1-D(T))$</div></div>
+    <div class="f-item"><div class="f-name">Nordhaus damage</div><div class="f-eq">$D(T)=a_1T+a_2T^2$</div></div>
+    <div class="f-item"><div class="f-name">Capital dynamics</div><div class="f-eq">$\dot{K}=Y-C-\mu Y-\delta_K K$</div></div>
+    <div class="f-item"><div class="f-name">Carbon dynamics</div><div class="f-eq">$\dot{S}=E(K,\mu)-\delta_S S$</div></div>
+    <div class="f-item"><div class="f-name">Temperature dynamics</div><div class="f-eq">$\dot{T}=\beta[\ln(S/S_\text{pre})-T]$</div></div>
+    <div class="f-item"><div class="f-name">Climate HJB</div><div class="f-eq">$\rho J=\max_C\{\ldots+\lambda\int[J(K(1-\varepsilon))-J(K)]f(\varepsilon)d\varepsilon\}$</div></div>
+    <div class="f-item"><div class="f-name">Jump term simplified</div><div class="f-eq">$\mathcal{L}_\text{jump}J=\lambda J\cdot\Phi(\gamma),\;\Phi(\gamma)=\mathbb{E}[(1-\varepsilon)^{1-\gamma}]-1$</div></div>
+    <div class="f-item"><div class="f-name">Value fn. conjecture</div><div class="f-eq">$J(C,S)=\dfrac{C^{1-\gamma}}{1-\gamma}\cdot S^{-\gamma\varphi}$</div></div>
+    <div class="f-item"><div class="f-name">SCC (definition)</div><div class="f-eq">$\text{SCC}=-J_S/J_C$</div></div>
+    <div class="f-item"><div class="f-name">SCC (closed form)</div><div class="f-eq">$\text{SCC}=\dfrac{\gamma\varphi}{1-\gamma}\cdot\dfrac{C}{S}$</div></div>
+    <div class="f-item"><div class="f-name">Optimal abatement</div><div class="f-eq">$\text{MAC}(\mu^*)=\text{SCC}\cdot|\partial E/\partial\mu|$</div></div>
+    <div class="f-item"><div class="f-name">Weitzman's rule</div><div class="f-eq">Prefer Tax if $|\partial\,\text{MAC}/\partial q|>|\partial\,\text{MD}/\partial q|$</div></div>
+  </div>
+  <h3>Personal notes</h3>
+  <div id="dw-formulas-notes"></div>
+  <div class="storage-bar" id="storage-info">
+    💾 <span id="storage-txt">Calculating storage…</span>
+    <button onclick="clearAllDrawings()">Clear all drawings</button>
+  </div>
+</section>
+
+</div><!-- /.wrap -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DRAWING ENGINE
+═══════════════════════════════════════════════════════════ */
+class DrawCanvas {
+  constructor(containerId, opts = {}) {
+    this.key   = 'alm_ch6_' + containerId;
+    this.color = '#1a2540';
+    this.tool  = 'pen';
+    this.undoStack = [];       // in-memory snapshots for undo
+    this.isDown = false;
+    this.height = opts.height || 260;
+    this.label  = opts.label  || '✏️  Write here with Apple Pencil — finger scrolls the page';
+
+    this.container = document.getElementById(containerId);
+    if (!this.container) return;
+    this._build();
+    this._bind();
+    this._load();
+  }
+
+  _build() {
+    this.container.innerHTML = `
+    <div class="draw-wrap">
+      <div class="draw-header">
+        <span class="draw-label">${this.label}</span>
+        <div class="draw-tools">
+          <div class="color-dot active-color" style="background:#1a2540" data-c="#1a2540" title="Dark"></div>
+          <div class="color-dot" style="background:#1565c0" data-c="#1565c0" title="Blue"></div>
+          <div class="color-dot" style="background:#b71c1c" data-c="#b71c1c" title="Red"></div>
+          <div class="color-dot" style="background:#2e7d32" data-c="#2e7d32" title="Green"></div>
+          <button class="dt-btn" data-tool="pen"    title="Pen">🖊️</button>
+          <button class="dt-btn" data-tool="eraser" title="Eraser">⬜</button>
+          <button class="dt-btn" data-action="undo"   title="Undo">↩️</button>
+          <button class="dt-btn" data-action="clear"  title="Clear">🗑️</button>
+          <button class="dt-btn" data-action="expand" title="More space">↕️</button>
+        </div>
+      </div>
+      <div class="canvas-container" style="height:${this.height}px">
+        <canvas class="draw-canvas"></canvas>
+        <div class="canvas-hint"><span>✏️  Apple Pencil to write · finger to scroll</span></div>
+      </div>
+      <div class="draw-footer">
+        <span class="draw-status" id="ds-${this.key}">Ready</span>
+        <span class="save-indicator" id="si-${this.key}">✓ saved</span>
+      </div>
+    </div>`;
+
+    this.canvas    = this.container.querySelector('canvas');
+    this.ctx       = this.canvas.getContext('2d');
+    this.hint      = this.container.querySelector('.canvas-hint');
+    this.statusEl  = document.getElementById('ds-' + this.key);
+    this.saveIndEl = document.getElementById('si-' + this.key);
+    this._resize();
+
+    // ResizeObserver keeps canvas sharp on orientation change
+    this._ro = new ResizeObserver(() => this._onResize());
+    this._ro.observe(this.container.querySelector('.canvas-container'));
+  }
+
+  _resize() {
+    const dpr   = window.devicePixelRatio || 1;
+    const cc    = this.container.querySelector('.canvas-container');
+    const w     = cc.offsetWidth;
+    const h     = cc.offsetHeight;
+    if (!w || !h) return;
+    this.canvas.width  = w * dpr;
+    this.canvas.height = h * dpr;
+    this.ctx.scale(dpr, dpr);
+    this.ctx.lineCap  = 'round';
+    this.ctx.lineJoin = 'round';
+  }
+
+  _onResize() {
+    const snapshot = this.canvas.toDataURL();
+    this._resize();
+    const img = new Image();
+    img.onload = () => {
+      const dpr = window.devicePixelRatio || 1;
+      this.ctx.drawImage(img, 0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+    };
+    img.src = snapshot;
+  }
+
+  _bind() {
+    const el = this.canvas;
+    el.addEventListener('pointerdown',  e => this._down(e), { passive: false });
+    el.addEventListener('pointermove',  e => this._move(e), { passive: false });
+    el.addEventListener('pointerup',    e => this._up(e));
+    el.addEventListener('pointercancel',e => this._up(e));
+    el.addEventListener('contextmenu',  e => e.preventDefault());
+
+    // Toolbar buttons
+    this.container.querySelectorAll('.dt-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const t = btn.dataset.tool;
+        const a = btn.dataset.action;
+        if (t) { this.tool = t; this._updateToolUI(); }
+        if (a === 'undo')   this._undo();
+        if (a === 'clear')  this._clear();
+        if (a === 'expand') this._expand();
+      });
+    });
+
+    // Color dots
+    this.container.querySelectorAll('.color-dot').forEach(dot => {
+      dot.addEventListener('click', e => {
+        e.stopPropagation();
+        this.color = dot.dataset.c;
+        this.tool = 'pen';
+        this.container.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active-color'));
+        dot.classList.add('active-color');
+        this._updateToolUI();
+      });
+    });
+  }
+
+  _updateToolUI() {
+    this.container.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active-tool'));
+    const active = this.container.querySelector(`[data-tool="${this.tool}"]`);
+    if (active) active.classList.add('active-tool');
+  }
+
+  _getPos(e) {
+    const r = this.canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  _down(e) {
+    // Apple Pencil Pro = pointerType 'pen'. Finger = 'touch' → let browser scroll.
+    if (e.pointerType === 'touch') return;
+    e.preventDefault();
+    this.canvas.setPointerCapture(e.pointerId);
+    this.isDown = true;
+    this._activePointer = e.pointerId;
+    const p = this._getPos(e);
+    this._pressure = e.pressure || 0.5;
+    this.ctx.beginPath();
+    this.ctx.moveTo(p.x, p.y);
+    if (this.statusEl) this.statusEl.textContent = 'Drawing…';
+  }
+
+  _move(e) {
+    if (!this.isDown || e.pointerType === 'touch') return;
+    if (e.pointerId !== this._activePointer) return;
+    e.preventDefault();
+    const p   = this._getPos(e);
+    const prs = e.pressure > 0 ? e.pressure : 0.5;
+
+    if (this.tool === 'eraser') {
+      this.ctx.globalCompositeOperation = 'destination-out';
+      this.ctx.lineWidth = 24;
+    } else {
+      this.ctx.globalCompositeOperation = 'source-over';
+      this.ctx.strokeStyle = this.color;
+      this.ctx.lineWidth = Math.max(0.8, prs * 4.5);   // pressure-sensitive width
+    }
+    this.ctx.lineTo(p.x, p.y);
+    this.ctx.stroke();
+    this.ctx.beginPath();
+    this.ctx.moveTo(p.x, p.y);
+    this.hint.style.opacity = '0';
+  }
+
+  _up(e) {
+    if (!this.isDown) return;
+    this.isDown = false;
+    this.ctx.globalCompositeOperation = 'source-over';
+    // Snapshot for undo (keep last 8)
+    this.undoStack.push(this.canvas.toDataURL());
+    if (this.undoStack.length > 8) this.undoStack.shift();
+    this._save();
+    if (this.statusEl) this.statusEl.textContent = 'Ready';
+  }
+
+  _undo() {
+    if (this.undoStack.length < 2) {
+      if (this.undoStack.length === 1) {
+        // Undo to blank
+        this.undoStack.pop();
+        const dpr = window.devicePixelRatio || 1;
+        this.ctx.clearRect(0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+        this.hint.style.opacity = '.35';
+        this._save();
+      }
+      return;
+    }
+    this.undoStack.pop();
+    const img = new Image();
+    const dpr = window.devicePixelRatio || 1;
+    img.onload = () => {
+      this.ctx.clearRect(0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+      this.ctx.drawImage(img, 0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+    };
+    img.src = this.undoStack[this.undoStack.length - 1];
+    this._save();
+  }
+
+  _clear() {
+    const dpr = window.devicePixelRatio || 1;
+    this.ctx.clearRect(0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+    this.undoStack = [];
+    this.hint.style.opacity = '.35';
+    this._save();
+    showToast('Canvas cleared');
+  }
+
+  _expand() {
+    const cc = this.container.querySelector('.canvas-container');
+    const cur = cc.offsetHeight;
+    const snap = this.canvas.toDataURL();
+    cc.style.height = (cur + 200) + 'px';
+    // After resize, restore drawing
+    setTimeout(() => {
+      this._resize();
+      const img = new Image();
+      const dpr = window.devicePixelRatio || 1;
+      img.onload = () => this.ctx.drawImage(img, 0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+      img.src = snap;
+    }, 50);
+  }
+
+  _save() {
+    try {
+      // Save as compressed JPEG for efficiency
+      const data = this.canvas.toDataURL('image/jpeg', 0.82);
+      localStorage.setItem(this.key, data);
+      if (this.saveIndEl) {
+        this.saveIndEl.classList.add('show');
+        setTimeout(() => this.saveIndEl.classList.remove('show'), 1500);
+      }
+      updateStorageInfo();
+    } catch(err) {
+      if (err.name === 'QuotaExceededError') showToast('⚠️ Storage full — clear some drawings');
+    }
+  }
+
+  _load() {
+    const data = localStorage.getItem(this.key);
+    if (!data) return;
+    const img = new Image();
+    const dpr = window.devicePixelRatio || 1;
+    img.onload = () => {
+      // Wait until canvas has proper dimensions
+      const tryDraw = () => {
+        if (this.canvas.width > 0 && this.canvas.height > 0) {
+          this.ctx.drawImage(img, 0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+          this.hint.style.opacity = '0';
+          this.undoStack.push(this.canvas.toDataURL());
+        } else {
+          setTimeout(tryDraw, 80);
+        }
+      };
+      tryDraw();
+    };
+    img.src = data;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APP INIT — called after KaTeX finishes rendering
+═══════════════════════════════════════════════════════════ */
+function initApp() {
+  // Instantiate all drawing canvases
+  new DrawCanvas('dw-overview-notes',  { height: 180, label: '✏️  Notes & connections' });
+  new DrawCanvas('dw-dice-feedback',   { height: 240, label: '✏️  Sketch the DICE feedback loop' });
+  new DrawCanvas('dw-dice-foc',        { height: 320, label: '✏️  Derive the optimal abatement FOC' });
+  new DrawCanvas('dw-hjb-label',       { height: 220, label: '✏️  Label each term of the HJB equation' });
+  new DrawCanvas('dw-hjb-conjecture',  { height: 440, label: '✏️  Full conjecture verification — main exam workspace' });
+  new DrawCanvas('dw-scc-derive',      { height: 280, label: '✏️  Derive SCC from the partials' });
+  new DrawCanvas('dw-scc-ets',         { height: 200, label: '✏️  ETS vs Tax analysis' });
+
+  // Exam question canvases (smaller — appear when question is opened)
+  new DrawCanvas('dw-qa1', { height: 180, label: '✏️  Your answer' });
+  new DrawCanvas('dw-qa2', { height: 180, label: '✏️  Your answer' });
+  new DrawCanvas('dw-qa3', { height: 200, label: '✏️  Your answer' });
+  new DrawCanvas('dw-qa4', { height: 180, label: '✏️  Your answer' });
+  new DrawCanvas('dw-qb1', { height: 260, label: '✏️  Your answer' });
+  new DrawCanvas('dw-qb2', { height: 320, label: '✏️  Your answer' });
+  new DrawCanvas('dw-qb3', { height: 220, label: '✏️  Your answer' });
+
+  new DrawCanvas('dw-formulas-notes', { height: 200, label: '✏️  Personal formula notes' });
+
+  // Restore quiz state
+  const saved = localStorage.getItem('alm_ch6_scores');
+  if (saved) {
+    const s = JSON.parse(saved);
+    document.getElementById('sc-num').textContent  = s.score || 0;
+    document.getElementById('sc-done').textContent = s.done  || 0;
+  }
+
+  // Restore flashcard state
+  const fcState = localStorage.getItem('alm_ch6_fc');
+  if (fcState) {
+    const s = JSON.parse(fcState);
+    currentCard = s.card || 0;
+    ratings     = s.ratings || new Array(CARDS.length).fill(null);
+  }
+  renderCard(currentCard);
+  updateStorageInfo();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAB NAVIGATION
+═══════════════════════════════════════════════════════════ */
+const secMap = {
+  overview:'sec-overview', dice:'sec-dice', hjb:'sec-hjb',
+  scc:'sec-scc', exam:'sec-exam', cards:'sec-cards', formulas:'sec-formulas'
+};
+document.getElementById('nav').addEventListener('click', e => {
+  const btn = e.target.closest('.nav-tab');
+  if (!btn) return;
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(secMap[btn.dataset.s]).classList.add('active');
+  window.scrollTo(0, 0);
+  // Re-render KaTeX if needed
+  if (window.renderMathInElement) {
+    renderMathInElement(document.getElementById(secMap[btn.dataset.s]),
+      {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════
+   COLLAPSIBLE QUESTIONS
+═══════════════════════════════════════════════════════════ */
+function toggleQ(block) { block.classList.toggle('open'); }
+
+/* ═══════════════════════════════════════════════════════════
+   SCORE TRACKER
+═══════════════════════════════════════════════════════════ */
+let totalScore = 0, qDone = 0;
+function saveScores() {
+  localStorage.setItem('alm_ch6_scores', JSON.stringify({score:totalScore, done:qDone}));
+}
+function resetScore() {
+  totalScore = 0; qDone = 0;
+  document.getElementById('sc-num').textContent  = '0';
+  document.getElementById('sc-done').textContent = '0';
+  saveScores();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXAM TIMER
+═══════════════════════════════════════════════════════════ */
+let timeLeft = 18*60, timerInt = null, running = false;
+function fmt(s){ return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+const disp = document.getElementById('timer-disp');
+document.getElementById('btn-start').addEventListener('click', () => {
+  if (running) {
+    clearInterval(timerInt); running = false;
+    document.getElementById('btn-start').textContent = '▶';
+  } else {
+    running = true;
+    document.getElementById('btn-start').textContent = '⏸';
+    timerInt = setInterval(() => {
+      if (timeLeft <= 0) { clearInterval(timerInt); disp.textContent='00:00'; disp.style.color='#ef9a9a'; running=false; document.getElementById('btn-start').textContent='▶'; return; }
+      timeLeft--;
+      disp.textContent = fmt(timeLeft);
+      disp.style.color = timeLeft<=180?'#ef9a9a':timeLeft<=360?'#ffcc80':'#a5d6a7';
+    }, 1000);
+  }
+});
+document.getElementById('btn-reset').addEventListener('click', () => {
+  clearInterval(timerInt); running=false; timeLeft=18*60;
+  disp.textContent=fmt(timeLeft); disp.style.color='#a5d6a7';
+  document.getElementById('btn-start').textContent='▶';
+});
+
+/* ═══════════════════════════════════════════════════════════
+   READING PROGRESS
+═══════════════════════════════════════════════════════════ */
+window.addEventListener('scroll', () => {
+  const total = document.documentElement.scrollHeight - window.innerHeight;
+  document.getElementById('read-prog').style.width = (total>0?(window.scrollY/total)*100:0)+'%';
+});
+
+/* ═══════════════════════════════════════════════════════════
+   FLASHCARDS
+═══════════════════════════════════════════════════════════ */
+const CARDS = [
+  {tag:'DEFINITION', q:'Define the Social Cost of Carbon using the value function.',hint:'Ratio of partial derivatives',a:'SCC ≡ −J<sub>S</sub>/J<sub>C</sub>. Consumption the planner sacrifices to reduce carbon stock by one unit.'},
+  {tag:'FORMULA',    q:'Write the Climate HJB jump term from memory.',hint:'Rate × expected value change per jump',a:'λ∫<sub>0</sub><sup>1</sup>[J(K(1−ε),S,T) − J(K,S,T)] f(ε) dε'},
+  {tag:'CLASSIFY',   q:'A coal plant is stranded by a new carbon regulation. Physical or transition risk?',hint:'Source of damage?',a:'<strong>Transition risk.</strong> Damage comes from the policy response, not a physical event. Stranded-asset channel.'},
+  {tag:'DERIVATION', q:'Under the conjecture J = C<sup>1−γ</sup>/(1−γ)·S<sup>−γφ</sup>, what is J<sub>S</sub>?',hint:'Power rule on S',a:'J<sub>S</sub> = C<sup>1−γ</sup>/(1−γ) · (−γφ) · S<sup>−γφ−1</sup>'},
+  {tag:'INTUITION',  q:'Why does SCC = γφ/(1−γ)·C/S rise with C and fall with S?',hint:'WTP and diminishing marginal damage',a:'Higher C → richer economy, higher WTP. Higher S → diminishing marginal harm of one more unit.'},
+  {tag:'POLICY',     q:'When does Weitzman say prefer a carbon tax over ETS?',hint:'Slope of MAC vs MD',a:'When |∂MAC/∂q| > |∂MD/∂q| — MAC curve steeper than MD curve.'},
+  {tag:'DICE',       q:'Write the three DICE equations of motion.',hint:'Economy + carbon + temperature',a:'K̇=Y−C−μY−δ<sub>K</sub>K · Ṡ=E−δ<sub>S</sub>S · Ṫ=β[ln(S/S<sub>pre</sub>)−T]'},
+  {tag:'JUMP',       q:'Simplify the jump integral under the value function conjecture.',hint:'(1−ε)^(1−γ) factors out',a:'L<sub>jump</sub>J = λJ·Φ(γ), where Φ(γ) = ∫[(1−ε)<sup>1−γ</sup>−1]f(ε)dε < 0'},
+];
+let currentCard = 0;
+let ratings = new Array(CARDS.length).fill(null);
+
+function renderCard(idx) {
+  const c = CARDS[idx];
+  document.getElementById('fc-wrap').innerHTML = `
+    <div class="fc-scene">
+      <div class="fc-card" id="fc-card" onclick="this.classList.toggle('flip')">
+        <div class="fc-face fc-front">
+          <div class="fc-tag">${c.tag}</div>
+          <div class="fc-q">${c.q}</div>
+          <div class="fc-hint">💡 ${c.hint}</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div class="a-lbl">✓ Answer</div>
+          <div class="fc-ans">${c.a}</div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('fc-prog').textContent =
+    `Card ${idx+1} / ${CARDS.length}  ·  Reviewed: ${ratings.filter(r=>r!==null).length}`;
+  if (window.renderMathInElement) {
+    renderMathInElement(document.getElementById('fc-wrap'),
+      {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+  }
+}
+function rateCard(r) {
+  ratings[currentCard] = r;
+  currentCard = (currentCard+1) % CARDS.length;
+  renderCard(currentCard);
+  localStorage.setItem('alm_ch6_fc', JSON.stringify({card:currentCard, ratings}));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST & STORAGE
+═══════════════════════════════════════════════════════════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function updateStorageInfo() {
+  let total = 0;
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith('alm_ch6_')) total += localStorage.getItem(k).length;
+  }
+  const kb = (total / 1024).toFixed(1);
+  const el = document.getElementById('storage-txt');
+  if (el) el.textContent = `${kb} KB saved across your drawings`;
+}
+
+function clearAllDrawings() {
+  if (!confirm('Clear all saved drawings for Chapter 6? This cannot be undone.')) return;
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith('alm_ch6_dw')) localStorage.removeItem(k);
+  }
+  showToast('All drawings cleared — reload to see blank canvases');
+  updateStorageInfo();
+}
+</script>
+</body>
+</html>
