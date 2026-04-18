@@ -561,7 +561,8 @@ class DrawCanvas {
     </div>`;
 
     this.canvas    = this.container.querySelector('canvas');
-    this.ctx       = this.canvas.getContext('2d');
+    // desynchronized:true bypasses the compositor — lowest possible latency on iPad
+    this.ctx       = this.canvas.getContext('2d', { desynchronized: true, willReadFrequently: false });
     this.hint      = this.container.querySelector('.canvas-hint');
     this.statusEl  = document.getElementById('ds-' + this.key);
     this.saveIndEl = document.getElementById('si-' + this.key);
@@ -646,11 +647,12 @@ class DrawCanvas {
   }
 
   _down(e) {
-    if (e.pointerType === 'touch') return;  // finger scrolls, Pencil draws
+    if (e.pointerType === 'touch') return;
     e.preventDefault();
     e.stopPropagation();
     this.canvas.setPointerCapture(e.pointerId);
     this._activePointer = e.pointerId;
+    this._lastPoint = null;
     this.isDown = true;
     const p = this._getPos(e);
     this._pressure = e.pressure || 0.5;
@@ -664,27 +666,44 @@ class DrawCanvas {
     if (e.pointerId !== this._activePointer) return;
     e.preventDefault();
     e.stopPropagation();
-    const p   = this._getPos(e);
-    const prs = e.pressure > 0 ? e.pressure : 0.5;
 
-    if (this.tool === 'eraser') {
-      this.ctx.globalCompositeOperation = 'destination-out';
-      this.ctx.lineWidth = 24;
-    } else {
-      this.ctx.globalCompositeOperation = 'source-over';
-      this.ctx.strokeStyle = this.color;
-      this.ctx.lineWidth = Math.max(0.8, prs * 4.5);
+    // getCoalescedEvents() retrieves all buffered intermediate points
+    // between frames — this is the key to removing lag on iPad Pro
+    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+
+    for (const ev of events) {
+      const p   = this._getPos(ev);
+      const prs = ev.pressure > 0 ? ev.pressure : 0.5;
+
+      if (this.tool === 'eraser') {
+        this.ctx.globalCompositeOperation = 'destination-out';
+        this.ctx.lineWidth = 24;
+      } else {
+        this.ctx.globalCompositeOperation = 'source-over';
+        this.ctx.strokeStyle = this.color;
+        this.ctx.lineWidth = Math.max(0.8, prs * 4.5);
+      }
+
+      // Use quadraticCurveTo for smoother curves between points
+      if (this._lastPoint) {
+        const mx = (this._lastPoint.x + p.x) / 2;
+        const my = (this._lastPoint.y + p.y) / 2;
+        this.ctx.quadraticCurveTo(this._lastPoint.x, this._lastPoint.y, mx, my);
+      } else {
+        this.ctx.lineTo(p.x, p.y);
+      }
+      this.ctx.stroke();
+      this.ctx.beginPath();
+      this.ctx.moveTo(p.x, p.y);
+      this._lastPoint = p;
     }
-    this.ctx.lineTo(p.x, p.y);
-    this.ctx.stroke();
-    this.ctx.beginPath();
-    this.ctx.moveTo(p.x, p.y);
     this.hint.style.opacity = '0';
   }
 
   _up(e) {
     if (!this.isDown) return;
     this.isDown = false;
+    this._lastPoint = null;
     this.ctx.globalCompositeOperation = 'source-over';
     // Snapshot for undo (keep last 8)
     this.undoStack.push(this.canvas.toDataURL());
