@@ -87,7 +87,7 @@ p{margin-bottom:.7rem;color:var(--text2)}
 .dt tr:hover td{background:var(--green-bg)}
 
 /* ── DRAWING AREA ────────────────────────────────────────── */
-.draw-wrap{margin:1rem 0;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);border:1px solid var(--g2)}
+.draw-wrap{margin:1rem 0;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);border:1px solid var(--g2);-webkit-user-select:none;user-select:none;}
 .draw-header{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--navy);gap:6px;flex-wrap:wrap}
 .draw-label{font-size:11px;font-weight:700;color:#a5d6a7;letter-spacing:.3px;flex:1}
 .draw-tools{display:flex;gap:4px;align-items:center;flex-shrink:0}
@@ -97,7 +97,10 @@ p{margin-bottom:.7rem;color:var(--text2)}
 .color-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;transition:transform .15s;flex-shrink:0}
 .color-dot:hover,.color-dot.active-color{transform:scale(1.3);border-color:#fff}
 .canvas-container{position:relative;background:#fff;width:100%}
-canvas.draw-canvas{display:block;width:100%;cursor:crosshair;touch-action:none;background:#fff}
+canvas.draw-canvas{display:block;width:100%;cursor:crosshair;touch-action:none;background:#fff;
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;}
 .canvas-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.35;transition:opacity .4s}
 .canvas-hint span{font-size:13px;color:var(--g3);font-style:italic}
 .draw-footer{display:flex;align-items:center;justify-content:space-between;padding:4px 10px;background:var(--g1);border-top:1px solid var(--g2)}
@@ -541,7 +544,14 @@ class DrawCanvas {
         </div>
       </div>
       <div class="canvas-container" style="height:${this.height}px">
-        <canvas class="draw-canvas"></canvas>
+        <canvas class="draw-canvas"
+          inputmode="none"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          data-ms-editor="false"
+        ></canvas>
         <div class="canvas-hint"><span>✏️  Apple Pencil to write · finger to scroll</span></div>
       </div>
       <div class="draw-footer">
@@ -588,11 +598,15 @@ class DrawCanvas {
 
   _bind() {
     const el = this.canvas;
-    el.addEventListener('pointerdown',  e => this._down(e), { passive: false });
-    el.addEventListener('pointermove',  e => this._move(e), { passive: false });
-    el.addEventListener('pointerup',    e => this._up(e));
-    el.addEventListener('pointercancel',e => this._up(e));
-    el.addEventListener('contextmenu',  e => e.preventDefault());
+    // passive:false needed so preventDefault() stops iOS scroll/Scribble takeover
+    el.addEventListener('pointerdown',   e => this._down(e), { passive: false });
+    el.addEventListener('pointermove',   e => this._move(e), { passive: false });
+    el.addEventListener('pointerup',     e => this._up(e));
+    el.addEventListener('pointercancel', e => this._up(e));
+    el.addEventListener('contextmenu',   e => e.preventDefault());
+    // Block text selection and Scribble on the canvas
+    el.addEventListener('selectstart',   e => e.preventDefault());
+    el.addEventListener('selectionchange', e => e.preventDefault());
 
     // Toolbar buttons
     this.container.querySelectorAll('.dt-btn').forEach(btn => {
@@ -632,12 +646,12 @@ class DrawCanvas {
   }
 
   _down(e) {
-    // Apple Pencil Pro = pointerType 'pen'. Finger = 'touch' → let browser scroll.
-    if (e.pointerType === 'touch') return;
+    if (e.pointerType === 'touch') return;  // finger scrolls, Pencil draws
     e.preventDefault();
+    e.stopPropagation();
     this.canvas.setPointerCapture(e.pointerId);
-    this.isDown = true;
     this._activePointer = e.pointerId;
+    this.isDown = true;
     const p = this._getPos(e);
     this._pressure = e.pressure || 0.5;
     this.ctx.beginPath();
@@ -649,6 +663,7 @@ class DrawCanvas {
     if (!this.isDown || e.pointerType === 'touch') return;
     if (e.pointerId !== this._activePointer) return;
     e.preventDefault();
+    e.stopPropagation();
     const p   = this._getPos(e);
     const prs = e.pressure > 0 ? e.pressure : 0.5;
 
@@ -658,7 +673,7 @@ class DrawCanvas {
     } else {
       this.ctx.globalCompositeOperation = 'source-over';
       this.ctx.strokeStyle = this.color;
-      this.ctx.lineWidth = Math.max(0.8, prs * 4.5);   // pressure-sensitive width
+      this.ctx.lineWidth = Math.max(0.8, prs * 4.5);
     }
     this.ctx.lineTo(p.x, p.y);
     this.ctx.stroke();
